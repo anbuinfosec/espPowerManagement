@@ -414,12 +414,8 @@ void setup() {
   delay(100);
   LittleFS.begin();
   loadLog();
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-  }
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid.c_str());
   digitalWrite(LED_PIN, HIGH);
   configTime(0,0,"pool.ntp.org","time.nist.gov");
   time_t now = time(nullptr);

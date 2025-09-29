@@ -1,4 +1,12 @@
+
 # Changelog
+
+## v1.0.1 (2025-09-30)
+- AP-only mode: ESP always shows its own WiFi for web panel, never tries to connect to external WiFi
+- WiFi AP is now open (no password required)
+- Removed NTP/configTime (no internet in AP-only mode)
+- Improved LED logic: blinks only on WiFi connect attempts, stays ON in AP mode
+- Minor code and documentation cleanups
 
 ## v1.0.0 (2025-09-30)
 - Initial public release
