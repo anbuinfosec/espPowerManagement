@@ -41,7 +41,10 @@ This project implements a self-contained ESP8266/ESP32 system that detects elect
 ## 🚀 Usage
 
 1. **Clone/download** this repo.
-2. **Edit** `src/main.cpp` to set your WiFi credentials.
+2. **Default WiFi credentials:**
+	- **SSID:** `Power House`
+	- **Password:** `anbuinfosec123`
+	- You can change these from the web dashboard after flashing.
 3. **Flash to ESP8266/ESP32:**
 	 - **On PC:** Use PlatformIO or Arduino IDE as usual.
 	 - **On Android:**
@@ -54,11 +57,13 @@ This project implements a self-contained ESP8266/ESP32 system that detects elect
 4. **Access** the ESP's IP address in your browser for the dashboard.
 
 
+
 ## 📁 File Structure
 
 - `src/main.cpp` — Main firmware code
 - `data/` — LittleFS data folder (if needed)
 - `README.md` — This file
+- `CHANGELOG.md` — Version history and changes
 
 
 ## 📦 Libraries Required

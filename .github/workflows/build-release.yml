@@ -9,16 +9,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Git user
+        run: |
+          git config --global user.email "anbuinfosec@gmail.com"
+          git config --global user.name "Mohammad Alamin"
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Bump version in changelog
+        run: |
+          python3 .github/scripts/bump_version.py
+
+      - name: Commit and push changelog
+        run: |
+          git add CHANGELOG.md
+          git commit -m "chore: bump version for release [skip ci]" || echo "No changes to commit"
+          git push origin HEAD:main || echo "No changes to push"
+
+      - name: Get new version
+        id: get_version
+        run: |
+          VERSION=$(grep -m1 -oP 'v\d+\.\d+\.\d+' CHANGELOG.md | head -1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
+
       - name: Install PlatformIO
         run: pip install platformio
+
+      - name: Install intelhex (for esptool)
+        run: pip install intelhex
 
       - name: Build esp8266 firmware
         run: |
@@ -36,5 +60,6 @@ jobs:
           files: |
             esp8266_framework.bin
             esp32_framework.bin
+          tag_name: ${{ steps.get_version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.SECRET_TOKEN }}
