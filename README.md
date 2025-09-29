@@ -1,4 +1,3 @@
-
 <div align="center">
 	<h1>⚡ ESP8266/ESP32 Offline Power Uptime Monitor</h1>
 	<p>
@@ -68,6 +67,22 @@ This project implements a self-contained ESP8266/ESP32 system that detects elect
 - [AsyncTCP (ESP32)](https://github.com/me-no-dev/AsyncTCP) / [ESPAsyncTCP (ESP8266)](https://github.com/me-no-dev/ESPAsyncTCP)
 - [LittleFS](https://github.com/earlephilhower/arduino-esp8266littlefs) (ESP8266) / [LittleFS_esp32](https://github.com/lorol/LITTLEFS)
 - [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
+
+
+## 🏗️ GitHub Actions: Automatic Build & Release
+
+On every GitHub release, this project automatically builds and uploads pre-compiled firmware binaries for both ESP8266 and ESP32:
+
+- `esp8266_framework.bin`
+- `esp32_framework.bin`
+
+You can download these files from the "Assets" section of each release on the [GitHub Releases page](../../releases).
+
+**To flash:**
+- Use [esphome-flasher](https://github.com/esphome/esphome-flasher), [ESPTool](https://github.com/espressif/esptool), or your favorite tool to upload the `.bin` file to your device.
+
+**Workflow summary:**
+- On every release, GitHub Actions builds both environments and attaches the binaries to the release automatically.
 
 
 ## 📝 License

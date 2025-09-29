@@ -1,0 +1,39 @@
+name: Build and Release Firmware
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build esp8266 firmware
+        run: |
+          platformio run -e esp8266
+          cp .pio/build/esp8266/firmware.bin esp8266_framework.bin
+
+      - name: Build esp32 firmware
+        run: |
+          platformio run -e esp32
+          cp .pio/build/esp32/firmware.bin esp32_framework.bin
+
+      - name: Upload firmware to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            esp8266_framework.bin
+            esp32_framework.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.SECRET_TOKEN }}

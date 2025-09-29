@@ -10,12 +10,21 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #endif
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+String ssid = "Power House";
+String password = "anbuinfosec123";
 #define LOG_FILE "/powerlog.json"
 #define HISTORY_DAYS 14
 #define AUTOSAVE_INTERVAL 300000UL
+// LED pin fallback for ESP32 if LED_BUILTIN is not defined
+#ifndef LED_BUILTIN
+#ifdef ESP32
+#define LED_PIN 2
+#else
+#define LED_PIN 13
+#endif
+#else
 #define LED_PIN LED_BUILTIN
+#endif
 AsyncWebServer server(80);
 unsigned long bootMillis;
 unsigned long lastSaveMillis;
@@ -56,17 +65,17 @@ void saveLog() {
   doc["last_on"] = logData.last_on;
   doc["last_off"] = logData.last_off;
   doc["last_downtime_sec"] = logData.last_downtime_sec;
-  JsonArray days = doc.createNestedArray("days");
+  JsonArray days = doc["days"].to<JsonArray>();
   for (auto& d : logData.days) {
-    JsonObject o = days.createNestedObject();
+    JsonObject o = days.add<JsonObject>();
     o["uptime"] = d.uptime_sec;
     o["downtime"] = d.downtime_sec;
     o["outages"] = d.outages;
     o["longest"] = d.longest_outage_sec;
   }
-  JsonArray events = doc.createNestedArray("events");
+  JsonArray events = doc["events"].to<JsonArray>();
   for (auto& e : logData.events) {
-    JsonObject o = events.createNestedObject();
+    JsonObject o = events.add<JsonObject>();
     o["on"] = e.on_time;
     o["off"] = e.off_time;
     o["duration"] = e.duration_sec;
@@ -162,6 +171,11 @@ const char* htmlPage = R"rawliteral(
     body { font-family: 'Inter',sans-serif; background: #f4f6fb; margin:0; padding:0; }
     .container { max-width: 700px; margin: 2em auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 24px #0001; padding: 2em; }
     h1 { color: #1a237e; font-size: 2.2em; margin-bottom: 0.2em; }
+    .nav { display: flex; gap: 1.5em; justify-content: center; align-items: center; margin-bottom: 2em; }
+    .nav a { color: #3949ab; text-decoration: none; font-weight: 600; font-size: 1.1em; padding: 0.3em 1em; border-radius: 6px; transition: background 0.2s; }
+    .nav a.active, .nav a:hover { background: #e3e7fa; }
+    .section { display: none; }
+    .section.active { display: block; }
     .live { display: flex; align-items: center; gap: 1em; margin-bottom: 1em; }
     .live .dot { width: 16px; height: 16px; border-radius: 50%; background: #43a047; box-shadow: 0 0 8px #43a04788; }
     .stat { font-size: 1.1em; margin: 0.3em 0; }
@@ -171,36 +185,62 @@ const char* htmlPage = R"rawliteral(
     .controls { margin-top: 2em; text-align: right; }
     button { background: #1a237e; color: #fff; border: none; border-radius: 6px; padding: 0.7em 1.5em; font-size: 1em; margin-left: 0.5em; cursor: pointer; transition: background 0.2s; }
     button:hover { background: #3949ab; }
-    @media (max-width: 800px) { .container { padding: 1em; } .charts { flex-direction: column; align-items: center; } }
+    form label { display:block; margin-bottom:0.3em; font-weight:600; }
+    form input { margin-bottom:0.7em; }
+    .dev-info { color:#888; font-size:1em; margin-top:2em; text-align:center; }
+    @media (max-width: 800px) { .container { padding: 1em; } .charts { flex-direction: column; align-items: center; } .nav { flex-direction: column; gap:0.5em; } }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>⚡ ESP Power Uptime Monitor</h1>
-    <div class="live"><div class="dot"></div><span id="since"></span></div>
-    <div class="stat"><b>Current Session:</b> <span id="session"></span></div>
-    <div class="stat"><b>Last Downtime:</b> <span id="last_downtime"></span></div>
-    <div class="stat"><b>Outages Today:</b> <span id="outages"></span></div>
-    <div class="summary">
-      <h3>Today’s Summary</h3>
-      <div class="stat"><b>Uptime:</b> <span id="today_uptime"></span></div>
-      <div class="stat"><b>Downtime:</b> <span id="today_downtime"></span></div>
-      <div class="stat"><b>Longest Outage:</b> <span id="longest_outage"></span></div>
-    </div>
-    <div class="charts">
-      <div class="chart-container"><canvas id="barChart"></canvas></div>
-      <div class="chart-container"><canvas id="lineChart"></canvas></div>
-    </div>
-    <div class="controls">
-        <button onclick="downloadLogs()">Download Logs</button>
-        <button onclick="clearData()">Clear Data</button>
+    <nav class="nav">
+      <a href="#" id="nav-home" class="active">Home</a>
+      <a href="#" id="nav-creds">Change Creds</a>
+      <a href="#" id="nav-dev">Developer</a>
+    </nav>
+    <div id="section-home" class="section active">
+      <div class="live"><div class="dot"></div><span id="since"></span></div>
+      <div class="stat"><b>Current Session:</b> <span id="session"></span></div>
+      <div class="stat"><b>Last Downtime:</b> <span id="last_downtime"></span></div>
+      <div class="stat"><b>Outages Today:</b> <span id="outages"></span></div>
+      <div class="summary">
+        <h3>Today’s Summary</h3>
+        <div class="stat"><b>Uptime:</b> <span id="today_uptime"></span></div>
+        <div class="stat"><b>Downtime:</b> <span id="today_downtime"></span></div>
+        <div class="stat"><b>Longest Outage:</b> <span id="longest_outage"></span></div>
       </div>
-      <div style="margin-top:2em;text-align:center;color:#888;font-size:0.98em;">
-        Made with ❤️ by <a href="https://github.com/anbuinfosec" target="_blank" style="color:#3949ab;text-decoration:none;font-weight:600;">@anbuinfosec</a>
+      <div class="charts">
+        <div class="chart-container"><canvas id="barChart"></canvas></div>
+        <div class="chart-container"><canvas id="lineChart"></canvas></div>
+      </div>
+      <div class="controls">
+          <button onclick="downloadLogs()">Download Logs</button>
+          <button onclick="clearData()">Clear Data</button>
       </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
+    <div id="section-creds" class="section">
+      <form id="wifiForm" style="margin-top:2em;text-align:center;max-width:350px;margin-left:auto;margin-right:auto;">
+        <h3>Change WiFi Credentials</h3>
+        <label for="ssid">WiFi Name (SSID)</label>
+        <input type="text" id="ssid" placeholder="WiFi Name" value="Power House" style="padding:0.5em;min-width:120px;width:100%;" />
+        <label for="wifipass">WiFi Password</label>
+        <input type="password" id="wifipass" placeholder="New Password" style="padding:0.5em;min-width:120px;width:100%;" />
+        <button type="submit">Update WiFi</button>
+        <div id="wifiMsg" style="margin-top:0.5em;color:#43a047;"></div>
+      </form>
+    </div>
+    <div id="section-dev" class="section">
+      <div class="dev-info">
+        <h3>Developer</h3>
+        <p>Made with ❤️ by <a href="https://github.com/anbuinfosec" target="_blank" style="color:#3949ab;text-decoration:none;font-weight:600;">@anbuinfosec</a></p>
+        <p>Project: <b>ESP Power Uptime Monitor</b></p>
+        <p>GitHub: <a href="https://github.com/anbuinfosec/espPowerManagement" target="_blank">github.com/anbuinfosec/espPowerManagement</a></p>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
     async function fetchStatus() {
       let r = await fetch('/status');
       let d = await r.json();
@@ -255,12 +295,74 @@ const char* htmlPage = R"rawliteral(
     }
     fetchStatus();
     setInterval(fetchStatus, 10000);
+    // Navigation logic
+    const navs = [
+      {btn: 'nav-home', section: 'section-home'},
+      {btn: 'nav-creds', section: 'section-creds'},
+      {btn: 'nav-dev', section: 'section-dev'}
+    ];
+    navs.forEach(n => {
+      document.getElementById(n.btn).addEventListener('click', function(e) {
+        e.preventDefault();
+        navs.forEach(x => {
+          document.getElementById(x.btn).classList.remove('active');
+          document.getElementById(x.section).classList.remove('active');
+        });
+        document.getElementById(n.btn).classList.add('active');
+        document.getElementById(n.section).classList.add('active');
+      });
+    });
+    // WiFi form logic
+    document.getElementById('wifiForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      let newSsid = document.getElementById('ssid').value;
+      let newPass = document.getElementById('wifipass').value;
+      let r = await fetch('/setwifi', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ssid: newSsid, password: newPass})
+      });
+      let msg = await r.text();
+      document.getElementById('wifiMsg').textContent = msg;
+    });
   </script>
 </body>
 </html>
 )rawliteral";
+void handleSetWiFi(AsyncWebServerRequest *request) {
+  if (request->method() != HTTP_POST) {
+    request->send(405, "text/plain", "Method Not Allowed");
+    return;
+  }
+  String body;
+  if (request->hasParam("body", true)) {
+    body = request->getParam("body", true)->value();
+  } else if (request->_tempObject) {
+    // PlatformIO/ESPAsyncWebServer POST body workaround
+    body = *(String*)request->_tempObject;
+  } else {
+    // If using ESPAsyncWebServer >=1.2.3, use onBody handler instead for POST data
+    request->send(400, "text/plain", "No POST body");
+    return;
+  }
+  StaticJsonDocument<256> doc;
+  DeserializationError err = deserializeJson(doc, body);
+  if (err) {
+    request->send(400, "text/plain", "Invalid JSON");
+    return;
+  }
+  String newSsid = doc["ssid"] | "";
+  String newPass = doc["password"] | "";
+  if (newSsid.length() < 1 || newPass.length() < 8) {
+    request->send(400, "text/plain", "SSID or password too short");
+    return;
+  }
+  ssid = newSsid;
+  password = newPass;
+  request->send(200, "text/plain", "WiFi credentials updated. Reboot device to apply.");
+}
 void handleStatus(AsyncWebServerRequest *request) {
-  DynamicJsonDocument doc(2048);
+  StaticJsonDocument<2048> doc;
   time_t now = getNow();
   doc["since"] = String(ctime(&logData.last_on)).substring(0,16);
   doc["session"] = timeStr(now - logData.last_on);
@@ -269,11 +371,11 @@ void handleStatus(AsyncWebServerRequest *request) {
   doc["today_uptime"] = timeStr(logData.days[0].uptime_sec);
   doc["today_downtime"] = timeStr(logData.days[0].downtime_sec);
   doc["longest_outage"] = timeStr(logData.days[0].longest_outage_sec);
-  JsonArray hourly = doc.createNestedArray("hourly_uptime");
+  JsonArray hourly = doc["hourly_uptime"].to<JsonArray>();
   uint32_t up = logData.days[0].uptime_sec / 60;
   for (int i=0; i<24; ++i) hourly.add(up/24);
-  JsonArray weekdays = doc.createNestedArray("weekdays");
-  JsonArray weekly = doc.createNestedArray("weekly_uptime");
+  JsonArray weekdays = doc["weekdays"].to<JsonArray>();
+  JsonArray weekly = doc["weekly_uptime"].to<JsonArray>();
   for (int i=0; i<7 && i<logData.days.size(); ++i) {
     weekdays.add("Day-"+String(i+1));
     weekly.add(logData.days[i].uptime_sec/3600.0);
@@ -302,6 +404,7 @@ void setupWeb() {
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/logs", HTTP_GET, handleLogs);
   server.on("/clear", HTTP_POST, handleClear);
+  server.on("/setwifi", HTTP_POST, handleSetWiFi);
   server.begin();
 }
 void setup() {
