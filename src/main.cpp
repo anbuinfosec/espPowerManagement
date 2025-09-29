@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #ifdef ESP8266
 #include <ESP8266WiFi.h>
+#undef CLOSED
 #include <ESPAsyncTCP.h>
 #else
 #include <WiFi.h>

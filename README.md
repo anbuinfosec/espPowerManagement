@@ -38,13 +38,21 @@ This project implements a self-contained ESP8266/ESP32 system that detects elect
 - No external sensors, RTC, or SD card required
 
 
+
 ## 🚀 Usage
 
 1. **Clone/download** this repo.
-2. **Open** in PlatformIO or Arduino IDE.
-3. **Edit** `src/main.cpp` to set your WiFi credentials.
-4. **Upload** to your ESP8266/ESP32.
-5. **Access** the ESP's IP address in your browser for the dashboard.
+2. **Edit** `src/main.cpp` to set your WiFi credentials.
+3. **Flash to ESP8266/ESP32:**
+	 - **On PC:** Use PlatformIO or Arduino IDE as usual.
+	 - **On Android:**
+		 1. Install [ArduinoDroid](https://play.google.com/store/apps/details?id=name.antonsmirnov.android.arduinodroid2) from Google Play Store.
+		 2. Copy the project folder to your Android device (e.g., in `ArduinoDroid/sketchbook/`).
+		 3. Open ArduinoDroid, open the project, and install all required libraries (see links above).
+		 4. Connect your ESP8266/ESP32 to your phone/tablet via OTG cable.
+		 5. Select the correct board and port in ArduinoDroid settings.
+		 6. Compile and upload the sketch.
+4. **Access** the ESP's IP address in your browser for the dashboard.
 
 
 ## 📁 File Structure
@@ -56,10 +64,10 @@ This project implements a self-contained ESP8266/ESP32 system that detects elect
 
 ## 📦 Libraries Required
 
-- ESPAsyncWebServer
-- AsyncTCP (ESP32) / ESPAsyncTCP (ESP8266)
-- LittleFS
-- ArduinoJson
+- [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
+- [AsyncTCP (ESP32)](https://github.com/me-no-dev/AsyncTCP) / [ESPAsyncTCP (ESP8266)](https://github.com/me-no-dev/ESPAsyncTCP)
+- [LittleFS](https://github.com/earlephilhower/arduino-esp8266littlefs) (ESP8266) / [LittleFS_esp32](https://github.com/lorol/LITTLEFS)
+- [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
 
 
 ## 📝 License
