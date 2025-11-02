@@ -49,17 +49,11 @@ jobs:
           platformio run -e esp8266
           cp .pio/build/esp8266/firmware.bin esp8266_framework.bin
 
-      - name: Build esp32 firmware
-        run: |
-          platformio run -e esp32
-          cp .pio/build/esp32/firmware.bin esp32_framework.bin
-
       - name: Upload firmware to release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             esp8266_framework.bin
-            esp32_framework.bin
           tag_name: ${{ steps.get_version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.SECRET_TOKEN }}
